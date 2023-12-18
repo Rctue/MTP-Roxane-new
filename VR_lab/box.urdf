@@ -1,0 +1,142 @@
+<?xml version="1.0" ?>
+<robot name="cup.urdf" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <link name="bottom">
+    <visual>
+      <geometry>
+        <box size ="1 1 0.01"/>
+      </geometry>
+      <material name="brown">
+        <color rgba ="0.71 0.51 0.32 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size ="1 1 0.01"/>
+      </geometry>
+      <material name="brown"/>
+    </collision>
+  </link>
+  <joint name="side1" type="fixed">
+    <parent link="bottom"/>
+    <child link="side1"/>
+    <origin rpy="0 0 0" xyz="0.5 0 0.24"/>
+  </joint>
+  <link name="side1">
+    <visual>
+      <geometry>
+        <box size ="0.01 1 0.48"/>
+      </geometry>
+      <material name="brown"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size ="0.01 1 0.48"/>
+      </geometry>
+      <material name="brown"/>
+    </collision>
+  </link>
+  <joint name="top1" type="revolute">
+    <parent link="side1"/>
+    <child link="top1"/>
+    <origin rpy="0 -0.785 0" xyz="0 0 0.24"/>
+    <axis xyz= "0 -1 0"/>
+    <limit lower="0" upper="3.927" effort="1" velocity="0.01"/>
+  </joint>
+  <link name="top1">
+    <visual>
+      <geometry>
+        <box size ="0.01 1 0.5"/>
+      </geometry>
+      <material name="brown"/>
+      <origin xyz="0 0 -0.25"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size ="0.01 1 0.5"/>
+      </geometry>
+      <material name="brown"/>
+      <origin xyz="0 0 -0.25"/>
+    </collision>
+  </link>
+  <joint name="side2" type="fixed">
+    <parent link="bottom"/>
+    <child link="side2"/>
+    <origin rpy="0 0 0" xyz="-0.5 0 0.24"/>
+  </joint>
+  <link name="side2">
+    <visual>
+      <geometry>
+        <box size ="0.01 1 0.48"/>
+      </geometry>
+      <material name="brown"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size ="0.01 1 0.48"/>
+      </geometry>
+      <material name="brown"/>
+    </collision>
+  </link>
+  <joint name="top2" type="revolute">
+    <parent link="side2"/>
+    <child link="top2"/>
+    <origin rpy="0 0.785 0" xyz="0 0 0.24"/>
+    <axis xyz= "0 1 0"/>
+    <limit lower="0" upper="3.927" effort="1" velocity="0.01"/>
+  </joint>
+  <link name="top2">
+    <visual>
+      <geometry>
+        <box size ="0.01 1 0.5"/>
+      </geometry>
+      <material name="brown"/>
+      <origin xyz="0 0 -0.25"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size ="0.01 1 0.5"/>
+      </geometry>
+      <origin xyz="0 0 -0.25"/>
+      <material name="brown"/>
+    </collision>
+  </link>
+  <joint name="side3" type="fixed">
+    <parent link="bottom"/>
+    <child link="side3"/>
+    <origin rpy="0 0 0" xyz="0 0.5 0.24"/>
+  </joint>
+  <link name="side3">
+    <visual>
+      <geometry>
+        <box size ="1 0.01 0.48"/>
+      </geometry>
+      <material name="brown"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size ="1 0.01 0.48"/>
+      </geometry>
+      <material name="brown"/>
+    </collision>
+  </link>
+  <joint name="side4" type="fixed">
+    <parent link="bottom"/>
+    <child link="side4"/>
+    <origin rpy="0 0 0" xyz="0 -0.5 0.24"/>
+  </joint>
+  <link name="side4">
+    <visual>
+      <geometry>
+        <box size ="1 0.01 0.48"/>
+      </geometry>
+      <material name="brown"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size ="1 0.01 0.48"/>
+      </geometry>
+      <material name="brown"/>
+    </collision>
+  </link>
+</robot>
+

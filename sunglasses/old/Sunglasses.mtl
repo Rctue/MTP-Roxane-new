@@ -1,0 +1,11 @@
+newmtl Opera_97833dbe-679c-48f7-a7be-e07c189546a3
+Kd 0.000 0.000 0.000
+d 1.000
+newmtl Echo 1_5ee66c8c-2a3e-400f-b3a8-48675c58207e
+Kd 1.000 1.000 1.000
+d 1.000
+map_Kd colorTexture&opacityTexture.png
+newmtl Echo_90522832-5c87-4dca-bf29-9d7d1558b7d5
+Kd 1.000 1.000 1.000
+d 1.000
+map_Kd colorTexture&opacityTexture.png
