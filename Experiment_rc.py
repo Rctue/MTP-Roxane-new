@@ -700,7 +700,10 @@ class Environment:
                         can_available = False
                         break
                        
-            pathcan = self.calculator.linearTrajectory(self.panda.getEndLocation(), can.getPos())
+            if self.panda_type == 0 or self.panda_type == 1:
+                pathcan = self.calculator.linearTrajectory(self.panda.getEndLocation(), can.getPos())
+            elif self.panda_type == 0 or self.panda_type == 1:
+                pathcan = self.calculator.legibleTrajectory(self.panda.getEndLocation(), can.getPos())
             self.panda.realTimeSim(time_to_correct, 0, pathcan, can.getPos())
             robot_reached = self.checkPoint(can.getPos(), self.panda.getEndLocation())
 
