@@ -41,7 +41,7 @@ class Experiment:
         self.stop = False
         # self.task_state = "not_done"
         #self.condition_list = random.sample([0,1,2,3], 4)
-        self.condition_list = [2,3]
+        self.condition_list = [1]
         
     def main(self):
         self.env = Environment()
@@ -63,11 +63,11 @@ class Experiment:
             self.env.setupPanda(conditionID)
 
             # Start condition
-            self.env.displayText(self.START_CONDITION)
-            time.sleep(0.7*SLEEP_TIME)
+            # self.env.displayText(self.START_CONDITION)
+            # time.sleep(0.7*SLEEP_TIME)
 
             # Waiting for controller action
-            self.waitForStart()
+            # self.waitForStart()
 
             # Start tasks
             condition_data = self.startExperiment(conditionID)
@@ -78,14 +78,15 @@ class Experiment:
         del self.env
 
         # Data directory setup
+        dataPath = "C:/Users/participant/Downloads/MTP Roxane/Data/"+"P"+str(participantID)
         try:
-            os.mkdir(dataPath+"P"+str(participantID))
+            os.mkdir(dataPath)
         except:
             print("Directory already created")
-        dataPath = dataPath + "P" + str(participantID) + "/"
+        
 
         # Write data to excel
-        self.exp_data.to_excel(dataPath+str(participantID) + str(datetime.now())+'_data.xlsx')
+        self.exp_data.to_excel(dataPath + "/" + str(datetime.now())+'_data.xlsx')
         
         
     def startExperiment(self, conditionID):
@@ -112,8 +113,11 @@ class Experiment:
             
             # Waiting for controller action
             # Once button is pressed, textbox is removed
-            self.waitForStart()
-
+            #self.waitForStart()
+            task_state = "wait_for_start"
+            while task_state == "wait_for_start":
+                time.sleep(0.5*SLEEP_TIME)
+            
             self.human_start_time = datetime.now()
             self.env.human_reached = False # becomes true when first cylinder is grasped
             self.env.human_end_time = None
@@ -496,7 +500,11 @@ class Environment:
                 #     for the_can_nr, can in enumerate(self.list_cans):
                 #         self.human_state[the_can_nr] = "no_target"
                 if task_state == "not_done":
-                    self.humanTaskEvents(e) 
+                    self.humanTaskEvents(e)
+                elif task_state == "wait_for_start":
+                    if e[BUTTONS][33] == p.VR_BUTTON_IS_DOWN or e[BUTTONS][32] == p.VR_BUTTON_IS_DOWN:
+                        task_state = "not_done"
+                        self.displayText('')                  
 
     def syncGripper(self, e):
         """Sync the gripper with the controller and allow for gripping."""
@@ -533,6 +541,7 @@ class Environment:
             # Check if all objects in box or on floor
             if self.box.inBox(can) or self.box.fellOnFloor(can):
                 self.state[the_can_nr] = "in_box" # treat fallen cans as in_box
+                self.human_state[the_can_nr] = "no_target"
             elif self.canOnTable(can):
                 self.state[the_can_nr] = "on_table"
             
@@ -552,10 +561,11 @@ class Environment:
                 
                 elif e[ANALOG]<0.1:
                     # did not squeeze hard enough to pick the can up, or let go of can to drop it in the box
+                    # This is not logical because if the can is dropped, checkPointHuman is no longer true
                     self.human_predict = True
                     self.human_state[the_can_nr] = "no_target"
                     if self.state[the_can_nr]=="in_hand":
-                        self.state[the_can_nr] = "dropped" # if the can is in the hand but not grasped,it is either on the table or falling to the table or in the box or 
+                        self.state[the_can_nr] = "dropped" # if the can is in the hand but not grasped,it is either on the table or falling to the table 
                         # if this state was "in_box" or "in_gripper" or "on_table" it remains unchanged
                     self.predicted_can_nr = the_can_nr # we still think this can is going to be grasped
                 else:
@@ -563,8 +573,11 @@ class Environment:
                 
                 # Predict human trajectory (if not grabbed)
             else:
-                self.human_state[the_can_nr] == "no_target"
-                self.predicted_can_nr = None
+                if self.state[the_can_nr]=="in_hand":
+                    self.state[the_can_nr] = "dropped" # if the can was in the hand but anymore, it is either fallen to the table or in the box
+                    # if this state was "in_box" or "in_gripper" or "on_table" it remains unchanged
+                    self.human_state[the_can_nr] = "no_target"
+                # self.predicted_can_nr = None
                     
                 if self.human_predict:
                     #if not any(human_state == "in_hand" for human_state in self.human_state):
@@ -573,7 +586,7 @@ class Environment:
                     # Check if predicted position is close to predicted_can_nr
                     if abs(self.predicted_position[0] - can.getPos()[0]) < 0.05:
                         if self.state[the_can_nr] == "on_table": # only if the can is still on the table and not in_box, in_hand, or in_gripper or done
-                            self.human_state[the_can_nr] == "predicted_target"
+                            self.human_state[the_can_nr] = "predicted_target"
                             self.predicted_can_nr = the_can_nr
                         #else:
                             #self.human_state[the_can_nr] == "no_target"
@@ -583,7 +596,8 @@ class Environment:
                         for can_nr, a_can in enumerate(self.list_cans):
                             if self.human_state[can_nr] == "predicted_target" and can_nr != self.predicted_can_nr:
                                 self.human_state[can_nr] = "no_target"
-
+                        # print("Object State pred: ", self.state)
+                        # print("Human State pred: ",self.human_state)
 
             # # Check with prints if correct things happen
             # if self.human_state[self.the_can_nr] == "holding_can":
@@ -605,10 +619,12 @@ class Environment:
                     #return self.human_boxed, self.human_chosen_can
         
         # Get the starting position and check when back at start to start predicting again
-        if any(hs != "holding_can" for hs in self.human_state):
+        if not any(hs == "holding_can" for hs in self.human_state):
             if self.checkPointStart(trajectory['start'], trajectory['current']):
                 #if not self.human_predict:
                 self.human_predict = True
+                # print("Object State human start: ", self.state)
+                # print("Human State human start: ",self.human_state)
                 #self.human_start_time = datetime.now() # would be useful if we want to track all movement times but now we just want to track the first reach
                 #print("Human back at start")
             
@@ -660,9 +676,9 @@ class Environment:
         
         
         print("Panda type/Control condition: ", self.panda_type)
-        print("Control: Can: ", can_nr)
-        print("Object State start: ", self.state)
-        print("Human State start: ",self.human_state)
+        print("Can: ", can_nr)
+        print("Object State robot start: ", self.state)
+        print("Human State robot start: ",self.human_state)
 
         # make initial movement for legible trajectories
         if self.panda_type==2 or self.panda_type == 3: 
@@ -690,21 +706,26 @@ class Environment:
             if self.panda_type ==1 or self.panda_type ==3:
                 if self.predicted_can_nr == can_nr:
                     # choose next possible can without returning to base
+                    print(f"-----Object state {can_nr} not available: ", self.human_state[can_nr])
                     new_can_list = self.find_cans("on_table")
                     new_can_list = [i for i in new_can_list if i!=self.predicted_can_nr] # exclude predicted can number from list if present
                     if len(new_can_list)>0:
                         can_nr = random.choice(new_can_list)
+                        print(f"----- New can: ", can_nr)
                         can = self.list_cans[can_nr]
                         self.robot_chosen_can = can_nr         # store for data collection
+                        panda_halfway = self.panda.getEndLocation()[0], self.panda.getEndLocation()[1], self.panda.getEndLocation()[2]+0.1
+                        pathcan = self.calculator.linearTrajectory(self.panda.getEndLocation(), panda_halfway)
+                        self.panda.realTimeSim(time_to_correct, 0, pathcan, can.getPos())
                     else:
                         can_available = False
                         break
                        
             if self.panda_type == 0 or self.panda_type == 1:
                 pathcan = self.calculator.linearTrajectory(self.panda.getEndLocation(), can.getPos())
-            elif self.panda_type == 0 or self.panda_type == 1:
-                pathcan = self.calculator.legibleTrajectory(self.panda.getEndLocation(), can.getPos())
-            self.panda.realTimeSim(time_to_correct, 0, pathcan, can.getPos())
+            elif self.panda_type == 2 or self.panda_type == 3:
+                pathcan = self.calculator.legibleTrajectory(self.panda.getEndLocation(), np.array(can.getPos()) + np.array([0,0,0.05*s]), startV=v, endA=a, distance=True)
+            self.panda.realTimeSim(time_to_grab, 0, pathcan, can.getPos())
             robot_reached = self.checkPoint(can.getPos(), self.panda.getEndLocation())
 
             # while reaching, check if available, otherwise return to base
@@ -728,6 +749,8 @@ class Environment:
             
         # return to base
         self.panda.moveToBase()
+        print("Object State at robot end: ", self.state)
+        print("Human State at robot end: ",self.human_state)
         
 
         # # CONDITION 1
