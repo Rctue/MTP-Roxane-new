@@ -41,7 +41,7 @@ class Experiment:
         self.stop = False
         # self.task_state = "not_done"
         #self.condition_list = random.sample([0,1,2,3], 4)
-        self.condition_list = [1]
+        self.condition_list = [0,1,2,3]
         
     def main(self):
         self.env = Environment()
@@ -65,9 +65,6 @@ class Experiment:
             # Start condition
             # self.env.displayText(self.START_CONDITION)
             # time.sleep(0.7*SLEEP_TIME)
-
-            # Waiting for controller action
-            # self.waitForStart()
 
             # Start tasks
             condition_data = self.startExperiment(conditionID)
@@ -238,8 +235,6 @@ class Environment:
     def __init__(self):    
         # Initialisation and setup
         self.setupEnvironment()
-        # Panda setup 
-        #self.setupPanda()
         self.calculator = TrajectoryCalculator()
        
         # Setup VR controllers
@@ -296,7 +291,6 @@ class Environment:
 
         # Initialise variables
         self.list_cans = []
-        # self.boxed_cans = []
         self.texts = []
         self.explanation = None
         self.state = [None]*nrCans
@@ -477,8 +471,6 @@ class Environment:
     
     # CONTINUOUS UPDATING OF GRIPPER EVENTS
     def humanEventThread(self):
-        #p.resetSimulation()
-        #p.stepSimulation()
         self.vr_events_running = True
         self.vr_events = threading.Thread(target=self.gripperEventLoop, args=())
         self.vr_events.start()
@@ -496,9 +488,6 @@ class Environment:
             for e in events:
                 self.syncGripper(e)
                 self.updateControllerPosition(e)
-                # if task_state == "task_done":
-                #     for the_can_nr, can in enumerate(self.list_cans):
-                #         self.human_state[the_can_nr] = "no_target"
                 if task_state == "not_done":
                     self.humanTaskEvents(e)
                 elif task_state == "wait_for_start":
@@ -552,8 +541,6 @@ class Environment:
                     self.human_state[the_can_nr] = "holding_can"
                     self.state[the_can_nr] = "in_hand"
                     self.predicted_can_nr = the_can_nr #prediction is now certainty
-                    # print("Object State grabbed: ", self.state)
-                    # print("Human State grabbed: ",self.human_state)
                     if not self.human_reached:
                         self.human_grasped_can = the_can_nr
                         self.human_reached = True # to make sure only the first object is considered
@@ -623,10 +610,7 @@ class Environment:
             if self.checkPointStart(trajectory['start'], trajectory['current']):
                 #if not self.human_predict:
                 self.human_predict = True
-                # print("Object State human start: ", self.state)
-                # print("Human State human start: ",self.human_state)
                 #self.human_start_time = datetime.now() # would be useful if we want to track all movement times but now we just want to track the first reach
-                #print("Human back at start")
             
     ################################################        THREAD 2        ##########################################################
 
@@ -675,7 +659,7 @@ class Environment:
         #self.resetCans(can_nr)
         
         
-        print("Panda type/Control condition: ", self.panda_type)
+        # print("Panda type/Control condition: ", self.panda_type)
         print("Can: ", can_nr)
         print("Object State robot start: ", self.state)
         print("Human State robot start: ",self.human_state)
@@ -689,7 +673,7 @@ class Environment:
             # Start gaze orientation
             startlook = datetime.now()
             self.panda.lookAtPoint(can.getPos(),0.5)
-            print("Time to look: " + str((datetime.now()-startlook).total_seconds()))
+            # print("Time to look: " + str((datetime.now()-startlook).total_seconds()))
             time_to_grab2 = time_to_grab*1.18 - (datetime.now()-startlook).total_seconds()
             
             # Start reaching for the can
@@ -706,7 +690,7 @@ class Environment:
             if self.panda_type ==1 or self.panda_type ==3:
                 if self.predicted_can_nr == can_nr:
                     # choose next possible can without returning to base
-                    print(f"-----Object state {can_nr} not available: ", self.human_state[can_nr])
+                    print(f"----- Human state {can_nr} not available: ", self.human_state[can_nr])
                     new_can_list = self.find_cans("on_table")
                     new_can_list = [i for i in new_can_list if i!=self.predicted_can_nr] # exclude predicted can number from list if present
                     if len(new_can_list)>0:
