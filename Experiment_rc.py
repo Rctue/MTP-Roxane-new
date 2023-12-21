@@ -41,7 +41,7 @@ class Experiment:
         self.stop = False
         # self.task_state = "not_done"
         #self.condition_list = random.sample([0,1,2,3], 4)
-        self.condition_list = [1]
+        self.condition_list = [1,3]
         
     def main(self):
         self.env = Environment()
@@ -102,9 +102,7 @@ class Experiment:
         ### START TASKS ###
         self.env.displayText(self.START_TASK)
         time.sleep(0.7*SLEEP_TIME)
-        condition_data= pd.DataFrame( columns=['participantID', 'Condition', 'Task', 'Can', 'Robot Chosen Can',
-                     'Human Chosen Can', 'Human Predicted Can', 'Completion Time (stf)',
-                      'Robot Reach Time (stc)', 'Human Reach Time (stc)'])
+        condition_data= pd.DataFrame()
         for self.task_nr in tasks:
             # When not the first task
             if self.task_nr > 0:
@@ -121,7 +119,7 @@ class Experiment:
             while task_state == "wait_for_start":
                 time.sleep(0.5*SLEEP_TIME)
             
-            self.human_start_time = datetime.now()
+            
             self.env.human_reached = False # becomes true when first cylinder is grasped
             self.env.human_end_time = None
             self.env.human_boxed = False #unused
@@ -129,9 +127,8 @@ class Experiment:
 
             # Robot start moving
             task_data = self.startRobotTask() # returns when task_state == "task_done"
-
-            # Get data from human controller hand
-            human_data = self.getHumanData()
+            human_data = self.env.human_reach_time_list[0]
+            # task_data = pd.concat([task_data, human_data], axis=1, ignore_index=True)
                         # Close the box
 
             # Combine data
@@ -144,7 +141,9 @@ class Experiment:
         # End Experiment condition (Do Questionnaire)
         self.env.displayText(self.END_TASK)
         time.sleep(3*SLEEP_TIME)
-        
+        condition_data.columns=['participantID', 'Condition', 'Task', 'Can', 'Robot Chosen Can',
+                     'Human Chosen Can', 'Human Predicted Can', 'Completion Time (stf)',
+                      'Robot Reach Time (stc)', 'Human Reach Time (stc)']
         return condition_data
     
     def startPractice(self):
@@ -207,9 +206,12 @@ class Experiment:
                 robot_reach_time = self.env.robotEventThread(can_nr)
                 
                 # Define data
-                results = pd.DataFrame([[participantID, self.conditionID, self.task_nr, can_nr, self.env.robot_chosen_can, self.env.robot_grasped_can, robot_reach_time]],
-                                        columns=['ParticipantID', 'ConditionID', 'Task', 'Can', 'Robot Chosen Can', 'Robot Grasped Can','Robot Reach time (stc)'])
+                results = pd.DataFrame([[participantID, self.conditionID, self.task_nr, can_nr, self.env.robot_chosen_can, self.env.robot_grasped_can, robot_reach_time]])
             
+                # Get data from human controller hand
+                #human_data = self.getHumanData()
+                #results = pd.concat([results, human_data], axis=1, ignore_index=True)
+
             if all(state == "in_box" for state in self.env.state):
                 time.sleep(1)
                 task_state = "task_done"
@@ -225,11 +227,11 @@ class Experiment:
         return self.task_data
     
     def getHumanData(self):
-        if self.env.human_boxed:
-            human_reach_time = (self.env.human_end_time - self.human_start_time).total_seconds()
+        
+        
 
-            human_data = pd.DataFrame([self.env.predicted_can_nr, self.env.human_grasped_can, human_reach_time], columns=['Predicted can nr','Human Chosen Can (stc)', 'Human Reach Time'])
-            self.data = pd.concat([self.data, human_data], axis = 1, ignore_index=True)     
+        human_data = pd.DataFrame([self.env.predicted_can_nr, self.env.human_grasped_can, human_reach_time], columns=['Predicted can nr','Human Chosen Can (stc)', 'Human Reach Time'])
+        self.data = pd.concat([self.data, human_data], axis = 1, ignore_index=True)     
 
 ###########################################################################################################################
 ##                                               ENVIRONMENT                                                             ##
@@ -245,7 +247,7 @@ class Environment:
         # Panda setup 
         #self.setupPanda()
         self.calculator = TrajectoryCalculator()
-       
+        self.human_reach_time_list = []   
         # Setup VR controllers
         if controllers_present:
             self.pr2_gripper = self.loadGripper()
@@ -562,6 +564,10 @@ class Environment:
                         self.human_grasped_can = the_can_nr
                         self.human_reached = True # to make sure only the first object is considered
                         self.human_end_time = datetime.now()
+                        human_reach_time = (self.human_end_time - self.human_start_time).total_seconds()
+                        self.human_reach_time_list.append(human_reach_time)
+        #                 self.human_data = pd.DataFrame([self.env.predicted_can_nr, self.env.human_grasped_can, human_reach_time], columns=['Predicted can nr','Human Chosen Can (stc)', 'Human Reach Time'])
+        # self.data = pd.concat([self.data, human_data], axis = 1, ignore_index=True)
                 
                 elif e[ANALOG]<0.1:
                     # did not squeeze hard enough to pick the can up, or let go of can to drop it in the box
@@ -602,6 +608,9 @@ class Environment:
                                 self.human_state[can_nr] = "no_target"
                         # print("Object State pred: ", self.state)
                         # print("Human State pred: ",self.human_state)
+                    else:
+                        if self.human_state[the_can_nr] == "predicted_target":
+                            self.human_state[the_can_nr] == "no_target"
 
             # # Check with prints if correct things happen
             # if self.human_state[self.the_can_nr] == "holding_can":
@@ -627,6 +636,8 @@ class Environment:
             if self.checkPointStart(trajectory['start'], trajectory['current']):
                 #if not self.human_predict:
                 self.human_predict = True
+                self.human_reached = False
+                self.human_start_time = datetime.now()
                 # print("Object State human start: ", self.state)
                 # print("Human State human start: ",self.human_state)
                 #self.human_start_time = datetime.now() # would be useful if we want to track all movement times but now we just want to track the first reach
@@ -693,12 +704,12 @@ class Environment:
             # Start gaze orientation
             startlook = datetime.now()
             self.panda.lookAtPoint(can.getPos(),0.5)
-            print("Time to look: " + str((datetime.now()-startlook).total_seconds()))
+            # print("Time to look: " + str((datetime.now()-startlook).total_seconds()))
             time_to_grab2 = time_to_grab*1.18 - (datetime.now()-startlook).total_seconds()
             
             # Start reaching for the can
-            pathcan = self.calculator.legibleTrajectory(self.panda.getEndLocation(), np.array(can.getPos()) + np.array([0,0,0.05*s]), startV=v, endA=a, distance=True)
-            self.panda.realTimeSim(time_to_grab2, 0, pathcan, can.getPos())
+            # pathcan = self.calculator.legibleTrajectory(self.panda.getEndLocation(), np.array(can.getPos()) + np.array([0,0,0.05*s]), startV=v, endA=a, distance=True)
+            # self.panda.realTimeSim(time_to_grab2, 0, pathcan, can.getPos())
             #self.robot_reached = self.checkPoint(can_pos.getPos(), self.panda.getEndLocation())
 
         ## Reach for can
@@ -718,7 +729,7 @@ class Environment:
                         print(f"----- New can: ", can_nr)
                         can = self.list_cans[can_nr]
                         self.robot_chosen_can = can_nr         # store for data collection
-                        panda_halfway = self.panda.getEndLocation()[0], self.panda.getEndLocation()[1], self.panda.getEndLocation()[2]+0.1
+                        panda_halfway = self.panda.getEndLocation()[0], self.panda.getEndLocation()[1], self.panda.getEndLocation()[2]+0.3
                         pathcan = self.calculator.linearTrajectory(self.panda.getEndLocation(), panda_halfway)
                         self.panda.realTimeSim(time_to_correct, 0, pathcan, can.getPos())
                     else:
@@ -727,9 +738,10 @@ class Environment:
                        
             if self.panda_type == 0 or self.panda_type == 1:
                 pathcan = self.calculator.linearTrajectory(self.panda.getEndLocation(), can.getPos())
+                self.panda.realTimeSim(time_to_grab, 0, pathcan, can.getPos())
             elif self.panda_type == 2 or self.panda_type == 3:
                 pathcan = self.calculator.legibleTrajectory(self.panda.getEndLocation(), np.array(can.getPos()) + np.array([0,0,0.05*s]), startV=v, endA=a, distance=True)
-            self.panda.realTimeSim(time_to_grab, 0, pathcan, can.getPos())
+                self.panda.realTimeSim(time_to_grab2, 0, pathcan, can.getPos())
             robot_reached = self.checkPoint(can.getPos(), self.panda.getEndLocation())
 
             # while reaching, check if available, otherwise return to base
@@ -949,7 +961,7 @@ class Environment:
         # Grip the Can
         self.panda.closeGripper()
         # Move to Box
-        h = 0.2
+        h = 0.4
         boxRelease = self.box.emptySpot()
         boxRelease = [boxRelease[0], boxRelease[1], boxRelease[2]+h*s]
 
