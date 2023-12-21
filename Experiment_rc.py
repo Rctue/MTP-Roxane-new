@@ -74,11 +74,9 @@ class Experiment:
             self.exp_data = pd.concat([self.exp_data, condition_data], axis = 0, ignore_index=True)
             self.env.removePanda()
             
-        self.env.stopEnvironment()
-        del self.env
 
         # Data directory setup
-        dataPath = "C:/Users/participant/Downloads/MTP Roxane/Data/"+"P"+str(participantID)
+        dataPath = "C:/Users/participant/Downloads/MTP Roxane/Data/"
         try:
             os.mkdir(dataPath)
         except:
@@ -86,8 +84,11 @@ class Experiment:
         
 
         # Write data to excel
-        self.exp_data.to_excel(dataPath + "/" + str(datetime.now())+'_data.xlsx')
+        # self.exp_data.to_excel(dataPath + "/" + str(datetime.now())+'_data.xlsx')
+        self.exp_data.to_excel(dataPath + "/" +"P"+str(participantID)+ time.strftime("%Y%m%d-%H%M%S")+'_data.xlsx')
         
+        self.env.stopEnvironment()
+        del self.env
         
     def startExperiment(self, conditionID):
         self.conditionID = conditionID
@@ -745,7 +746,7 @@ class Environment:
             # close gripper, pick up can and transport to box and drop into box
             self.putCanInBox()
         else:
-            print("-----Object state {can_nr} not available: ", self.state[can_nr])
+            print(f"-----Object state {can_nr} not available: ", self.state[can_nr])
             
         # return to base
         self.panda.moveToBase()
