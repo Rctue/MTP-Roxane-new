@@ -729,7 +729,7 @@ class Environment:
             # close gripper, pick up can and transport to box and drop into box
             self.putCanInBox()
         else:
-            print(f"-----Object state {can_nr} not available: ", self.state[can_nr])
+            print("-----Object state {can_nr} not available: ", self.state[can_nr])
             
         # return to base
         self.panda.moveToBase()
@@ -934,7 +934,7 @@ class Environment:
         boxRelease = [boxRelease[0], boxRelease[1], boxRelease[2]+h*s]
 
         # Choose trajectory
-        if self.panda_type == 2 or 3:
+        if self.panda_type == 2 or self.panda_type == 3:
             pathBox = self.calculator.legibleTrajectory(self.panda.getEndLocation(), boxRelease, startA=[0,0,10*s])
         else:
             pathBox = self.calculator.linearTrajectory(self.panda.getEndLocation(), boxRelease)
