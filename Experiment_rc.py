@@ -102,7 +102,9 @@ class Experiment:
         ### START TASKS ###
         self.env.displayText(self.START_TASK)
         time.sleep(0.7*SLEEP_TIME)
-
+        condition_data= pd.DataFrame( columns=['participantID', 'Condition', 'Task', 'Can', 'Robot Chosen Can',
+                     'Human Chosen Can', 'Human Predicted Can', 'Completion Time (stf)',
+                      'Robot Reach Time (stc)', 'Human Reach Time (stc)'])
         for self.task_nr in tasks:
             # When not the first task
             if self.task_nr > 0:
@@ -136,7 +138,8 @@ class Experiment:
             #columns=['participantID', 'Condition', 'Task', 'Can', 'Robot Chosen Can',
             #         'Human Chosen Can', 'Human Predicted Can', 'Completion Time (stf)',
             #          'Robot Reach Time (stc)', 'Human Reach Time (stc)'])
-            condition_data = pd.concat([task_data, human_data], axis=1, ignore_index=True) # checken met axis en zo of misschien met append doen
+            temp_data = pd.concat([task_data, human_data], axis=1, ignore_index=True) # checken met axis en zo of misschien met append doen
+            condition_data = pd.concat([condition_data, temp_data], axis=0, ignore_index=True)
 
         # End Experiment condition (Do Questionnaire)
         self.env.displayText(self.END_TASK)
