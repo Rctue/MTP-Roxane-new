@@ -78,7 +78,7 @@ class Box:
 
         if not inList:
             self.cans_in_box.append(current_can)
-            print(self.cans_in_box)
+            # print(self.cans_in_box)
         return True
 
     def isFull(self):

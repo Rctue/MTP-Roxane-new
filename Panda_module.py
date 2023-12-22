@@ -174,12 +174,13 @@ class Panda:
             time.sleep(max(tStep*8,0.001))
             return True
 
-        if final != None and self.type == 2:
-            if step == 0:
-                # print(f"step: {step}, \n, path : {path}")
-                self.moveToPoint(path[step][0:3], final, True, tStep, close=path[step][4])
-            else:
-                self.moveToPoint(path[step][0:3], final, close=path[step][4])
+        if final != None:
+            if self.type == 2 or self.type == 3:
+                if step == 0:
+                    # print(f"step: {step}, \n, path : {path}")
+                    self.moveToPoint(path[step][0:3], final, True, tStep, close=path[step][4])
+                else:
+                    self.moveToPoint(path[step][0:3], final, close=path[step][4])
         else: 
             self.moveToPoint(path[step][0:3], final)
         time_elapsed = (datetime.now()-startTime).total_seconds()
@@ -193,13 +194,13 @@ class Panda:
         """Moves the robot to a point."""
 
         # Condition 2 behaves differently
-        if self.type == 2 and final and not close:
+        if self.type == 2 or self.type == 3 and final and not close:
             hand = self.calcHand(final,target)
             jointPoses = self.calcJoints2([8,11,12], [hand, target, self.calcGlasses(hand,target)])
         else:
             jointPoses = self.calcJoints(target)
 
-        if grad and self.type == 2:
+        if grad and self.type == 2 or self.type == 3:
             self.setJoints(jointPoses, True, 20, tStep)
         else:
             self.setJoints(jointPoses)

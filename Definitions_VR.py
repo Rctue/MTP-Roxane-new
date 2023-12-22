@@ -29,8 +29,8 @@ track_time = 0.5
 #time_between_tasks = 3     #seconds
 time_between_cans = 0.5     #seconds
 time_to_grab = 1            #seconds
-time_to_correct = 1         #seconds
-time_to_box = 2             #seconds
+time_to_correct = 0.5       #seconds
+time_to_box = 3             #seconds
 time_to_return = 1          #seconds
 trajectory = {'start': None, 'current': None} # to store the start and current position
 
