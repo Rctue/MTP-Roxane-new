@@ -39,7 +39,7 @@ distance_until_orientation = 0
 s = 1                       # Scale factor
 tracking = False            # Tracking
 doPractice = False          # Include practice rounds + explanations
-SLEEP_TIME = 1              # Normally 10
+SLEEP_TIME = 10             # Normally 10
 controllers_present = True  # Check for use VR
 task_state = "not_done"
 

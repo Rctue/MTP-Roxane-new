@@ -21,14 +21,14 @@ from Trajectory_module import TrajectoryCalculator
 class Experiment:
     GRAB_OBJECT = "Try to grab one of the objects \n and drop it in the box. \n Pull the finger trigger to grab an object. \n Let go to let the object go."
     ALL_OBJECTS = "Try to put all objects \n into the box."
-    REPEAT = "To repeat this practice task:\n Press the big button. \n Otherwise indicate to the experimenter \n that you want to start the experiment."
+    REPEAT = "If you want to repeat this \n practice task, indicate this to \n the experimenter. Otherwise indicate \n that you want to start the experiment."
 
-    START_EXPERIMENT = "Now the real experiment starts. \n Make sure to work as fast as \n possible to put the objects in \n the box."
-    START_CONDITION = "This is the start of a \n condition. Press the BIG ROUND \n button to continue."
-    START_TASK = "Press the BIG button \n to start with the first task."
-    CONTINUE_TASK = "To continue with the next box \n press the BIG button"
+    START_EXPERIMENT = "Now the real experiment starts. \n Make sure to return to \n the starting position after \n every successful boxing of a can."
+    # START_CONDITION = "This is the start of a \n condition. Press the BIG ROUND \n button to continue."
+    START_TASK = "Press the BIG ROUND button \n to start with the first task. \n Please wait for the robot to start moving."
+    CONTINUE_TASK = "To continue with the next box \n press the BIG ROUND button"
     
-    END_TASK = "This was the end of a trial \n You can take off the headset \n and continue with the questionnaire."
+    END_TASK = "This was the end of a trial. \n You can take off the headset \n and continue with the questionnaire."
 
     def __init__(self):
         """ Initialise the experiment with a participant number and condition.
@@ -40,8 +40,9 @@ class Experiment:
         self.startNow = False
         self.stop = False
         # self.task_state = "not_done"
-        #self.condition_list = random.sample([0,1,2,3], 4)
-        self.condition_list = [2]
+        self.condition_list = random.sample([0,1,2,3], 4)
+        print(self.condition_list)
+        # self.condition_list = [2]
         
     def main(self):
         self.env = Environment()
@@ -49,12 +50,11 @@ class Experiment:
         ### START PRACTICE ###
         if doPractice:
             print("Starting DoPractice")
-            #self.env = Environment(99)
             self.startPractice()
-            self.env.stopEnvironment()
-            del self.env
+            # self.env.stopEnvironment()
+            # del self.env
 
-        ### GIVE INSTRUCTIONS ###  
+        ### GIVE INSTRUCTIONS ###
         self.env.displayText(self.START_EXPERIMENT)
         time.sleep(0.7*SLEEP_TIME)
             
@@ -62,18 +62,10 @@ class Experiment:
         for conditionID in self.condition_list:
             self.env.setupPanda(conditionID)
 
-            # Start condition
-            # self.env.displayText(self.START_CONDITION)
-            # time.sleep(0.7*SLEEP_TIME)
-
-            # Waiting for controller action
-            # self.waitForStart()
-
             # Start tasks
             condition_data = self.startExperiment(conditionID)
             self.exp_data = pd.concat([self.exp_data, condition_data], axis = 0, ignore_index=True)
             self.env.removePanda()
-            
 
         # Data directory setup
         dataPath = "C:/Users/participant/Downloads/MTP Roxane/Data/"
@@ -83,10 +75,10 @@ class Experiment:
             print("Directory already created")
         
         # Write data to excel
-        self.env.human_data.columns=['Human Reach Time', 'Human Predicted Can', 'Human Chosen Can']
+        # self.env.human_data.columns=['Human Reach Time', 'Human Predicted Can', 'Human Chosen Can']
        
         self.exp_data.to_excel(dataPath + "/" + "P"+str(participantID)+ time.strftime("%Y%m%d-%H%M%S")+'_data.xlsx')
-        self.env.human_data.to_excel(dataPath + "/" + "P"+str(participantID)+ time.strftime("%Y%m%d-%H%M%S")+"human_times" +'_data.xlsx')
+        # self.env.human_data.to_excel(dataPath + "/" + "P"+str(participantID)+ time.strftime("%Y%m%d-%H%M%S")+"human_times" +'_data.xlsx')
         
         self.env.stopEnvironment()
         self.vr_events_running = False
@@ -104,6 +96,7 @@ class Experiment:
         ### START TASKS ###
         self.env.displayText(self.START_TASK)
         time.sleep(0.7*SLEEP_TIME)
+
         condition_data= pd.DataFrame()
         for self.task_nr in tasks:
             # When not the first task
@@ -112,23 +105,23 @@ class Experiment:
                 self.env.newPackage()
                 task_state = "not_done"
                 self.env.displayText(self.CONTINUE_TASK)
-                time.sleep(0.5*SLEEP_TIME)
+                time.sleep(0.5)
             
             # Waiting for controller action
             # Once button is pressed, textbox is removed
             #self.waitForStart()
             task_state = "wait_for_start"
             while task_state == "wait_for_start":
-                time.sleep(0.5*SLEEP_TIME)
-            
+                time.sleep(0.5)
             
             self.env.human_reached = False # becomes true when first cylinder is grasped
             self.env.human_end_time = None
-            self.env.human_boxed = False #unused
+
             print("----- Start Experiment: " + str(datetime.now()))
 
             # Robot start moving
             task_data = self.startRobotTask() # returns when task_state == "task_done"
+
             # human_data = self.env.human_reach_time_list[0]
             # task_data = pd.concat([task_data, human_data], axis=1, ignore_index=True)
                         # Close the box
@@ -151,7 +144,7 @@ class Experiment:
         """ Start the practice task. """
         print("------ Start Practice: "+ str(datetime.now()))
 
-        ### GIVE INSTRUCTIONS ### 
+        ### GIVE INSTRUCTIONS ###
         # Try to grab object
         self.env.displayText(self.GRAB_OBJECT)
         time.sleep(0.7*SLEEP_TIME)
@@ -175,8 +168,8 @@ class Experiment:
         
         # Wait for button/spacebar presses
         while not self.startNow:
-            if controllers_present:
-                self.monitorVRController()  # Listen to VR controller
+            time.sleep(0.1)
+
         l.stop()
         l.join()
 
@@ -185,14 +178,6 @@ class Experiment:
        if hasattr(key, 'name') and key.name == 'space':
             self.startNow = True
             self.env.displayText('')
-
-    def monitorVRController(self):
-        """Check if VR button is pressed."""
-        events = p.getVREvents()
-        for e in (events):
-            if e[BUTTONS][33] == p.VR_BUTTON_IS_DOWN or e[BUTTONS][32] == p.VR_BUTTON_IS_DOWN:
-                self.startNow = True
-                self.env.displayText('')
     
     def startRobotTask(self):
         print("------ Start Task: " + str(self.task_nr))
@@ -225,9 +210,9 @@ class Experiment:
 
         return self.task_data
     
-    def getHumanData(self):
-        human_data = pd.DataFrame([self.env.predicted_can_nr, self.env.human_grasped_can])
-        self.data = pd.concat([self.data, human_data], axis = 1, ignore_index=True)     
+    # def getHumanData(self):
+    #     human_data = pd.DataFrame([self.env.predicted_can_nr, self.env.human_grasped_can])
+    #     self.data = pd.concat([self.data, human_data], axis = 1, ignore_index=True)     
 
 ###########################################################################################################################
 ##                                               ENVIRONMENT                                                             ##
@@ -563,9 +548,9 @@ class Environment:
                         human_reach_time = (self.human_end_time - self.human_start_time).total_seconds()
 
                         # Create dataframe
-                        self.human_data = pd.DataFrame()
-                        temp_data = pd.DataFrame([human_reach_time, self.predicted_can_nr, self.human_grasped_can])
-                        self.human_data = pd.concat([temp_data, self.human_data], axis=0, ignore_index=True)
+                        # self.human_data = pd.DataFrame()
+                        # temp_data = pd.DataFrame([human_reach_time, self.predicted_can_nr, self.human_grasped_can])
+                        # self.human_data = pd.concat([temp_data, self.human_data], axis=0, ignore_index=True)
                         # self.human_reach_time_list.append(human_reach_time)
         #                 self.human_data = pd.DataFrame([self.env.predicted_can_nr, self.env.human_grasped_can, human_reach_time], columns=['Predicted can nr','Human Chosen Can (stc)', 'Human Reach Time'])
         # self.data = pd.concat([self.data, human_data], axis = 1, ignore_index=True)
@@ -696,8 +681,8 @@ class Environment:
         # Initialise variables
         v = [0,0,0]
         a = [0,0,0.1]
-        startlook = datetime.now()
-        time_to_grab2 = time_to_grab*1.18 - (datetime.now()-startlook).total_seconds()
+        # startlook = datetime.now()
+        time_to_grab2 = time_to_grab - 0.5 # change: check if this works!
 
         # Check availability
         can_available = self.checkAvailability(can_nr)
