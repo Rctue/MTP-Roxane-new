@@ -41,7 +41,7 @@ class Experiment:
         self.stop = False
         # self.task_state = "not_done"
         #self.condition_list = random.sample([0,1,2,3], 4)
-        self.condition_list = [3]
+        self.condition_list = [2]
         
     def main(self):
         self.env = Environment()
